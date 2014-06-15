@@ -13,17 +13,22 @@ import rx.Subscriber;
 public class DummyCoinAcceptor implements CoinAcceptor {
     private final int amount;
     private final long interval;
+    boolean stopped = false;
 
     public DummyCoinAcceptor(int amount, long interval) {
         this.amount = amount;
         this.interval = interval;
     }
 
+    public void stop() {
+        stopped = true;
+    }
+
     @Override
     public Observable<Coin> coins() {
         return Observable.create((Subscriber<? super Coin> subscriber) -> new Thread(() -> {
             try {
-                for (int togo = amount; togo > 0 && !subscriber.isUnsubscribed(); togo--) {
+                for (int togo = amount; togo > 0 && !stopped && !subscriber.isUnsubscribed(); togo--) {
                     Thread.sleep(interval);
                     subscriber.onNext(Coin.EURO_1);
                 }

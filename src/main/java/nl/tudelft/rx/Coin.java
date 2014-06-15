@@ -18,11 +18,37 @@ public enum Coin {
         this.value = value;
     }
 
+    public static Coin fromValue(int value) {
+        Coin c;
+        switch (value) {
+            case 5:
+                c = Coin.EURO_C5;
+                break;
+            case 10:
+                c = Coin.EURO_C10;
+                break;
+            case 20:
+                c = Coin.EURO_C20;
+                break;
+            case 50:
+                c = Coin.EURO_C50;
+                break;
+            case 100:
+                c = Coin.EURO_1;
+                break;
+            case 200:
+                c = Coin.EURO_2;
+                break;
+            default:
+                throw new IllegalArgumentException(String.format("Coin with value %d does not exist", value));
+        }
+        return c;
+    }
+
     /**
      * Get the value of the coin
      */
     public int getValue() {
         return value;
     }
-
 }

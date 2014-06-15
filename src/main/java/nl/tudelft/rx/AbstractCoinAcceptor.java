@@ -24,7 +24,7 @@ public abstract class AbstractCoinAcceptor implements CoinAcceptor {
         synchronized (subscribers) {
             // Signal completed to all current subscribers
             for (Subscriber sub : subscribers) {
-                sub.onCompleted();
+                new Thread(() -> sub.onCompleted()).start();
             }
             // Remove all current subscribers
             subscribers.clear();
@@ -37,7 +37,7 @@ public abstract class AbstractCoinAcceptor implements CoinAcceptor {
     protected final void newCoin(Coin coin) {
         synchronized (subscribers) {
             for (Subscriber sub : subscribers) {
-                sub.onNext(coin);
+                new Thread(() -> sub.onNext(coin)).start();
             }
         }
     }
@@ -45,7 +45,7 @@ public abstract class AbstractCoinAcceptor implements CoinAcceptor {
     protected final void error(Throwable t) {
         synchronized (subscribers) {
             for (Subscriber sub : subscribers) {
-                sub.onError(t);
+                new Thread(() -> sub.onError(t)).start();
             }
             subscribers.clear();
         }

@@ -53,8 +53,6 @@ public abstract class AbstractCoinAcceptor implements CoinAcceptor {
 
     @Override
     public final Observable<Coin> coins() {
-        return Observable.create((Subscriber<? super Coin> subscriber) -> {
-            subscribers.add(subscriber);
-        });
+        return Observable.create((Subscriber<? super Coin> subscriber) -> subscribers.add(subscriber));
     }
 }

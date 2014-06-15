@@ -7,7 +7,7 @@ import rx.Subscriber;
 
 /**
  * A dummy coin acceptor that provides a configurable amount of random coins at a configurable interval.
- * Uses a seperate thread.
+ * Uses a separate thread.
  * Each new observable will start over.
  */
 public class DummyCoinAcceptor implements CoinAcceptor {
@@ -21,24 +21,18 @@ public class DummyCoinAcceptor implements CoinAcceptor {
 
     @Override
     public Observable<Coin> coins() {
-        // Lamdba seems not possible because of overload
-        return Observable.create(new Observable.OnSubscribe<Coin>() {
-            @Override
-            public void call(Subscriber<? super Coin> subscriber) {
-                new Thread(() -> {
-                    try {
-                        for (int togo = amount; togo > 0 && !subscriber.isUnsubscribed(); togo--) {
-                            Thread.sleep(interval);
-                            subscriber.onNext(Coin.EURO_1);
-                        }
-                        subscriber.onCompleted();
-                    } catch(Throwable t) {
-                        if(!subscriber.isUnsubscribed()) {
-                            subscriber.onError(t);
-                        }
-                    }
-                }).start();
+        return Observable.create((Subscriber<? super Coin> subscriber) -> new Thread(() -> {
+            try {
+                for (int togo = amount; togo > 0 && !subscriber.isUnsubscribed(); togo--) {
+                    Thread.sleep(interval);
+                    subscriber.onNext(Coin.EURO_1);
+                }
+                subscriber.onCompleted();
+            } catch (Throwable t) {
+                if (!subscriber.isUnsubscribed()) {
+                    subscriber.onError(t);
+                }
             }
-        });
+        }).start());
     }
 }

@@ -10,12 +10,19 @@ import nl.tudelft.rx.CoinAcceptor_DG600F;
 public class CoinWriter {
 
     public static void main(String... args) {
+        if(args.length < 1) {
+            System.out.println("CoinWrite PORT");
+            return;
+        }
+
         CoinAcceptor acceptor;
         try {
             acceptor = new CoinAcceptor_DG600F()
-                    .setPortname("COM3")
+                    .setPortname(args[0])
                     .connect();
-            acceptor.coins().subscribe((Coin c) -> System.out.println(String.format("Got a new coin %s with value %d!", c.name(), c.getValue())));
+            acceptor.coins().subscribe(
+                    (Coin c) -> System.out.println(String.format("Got a new coin %s with value %d!", c.name(), c.getValue()))
+            );
         } catch (Exception e) {
             System.err.println("Something went wrong...");
             e.printStackTrace();

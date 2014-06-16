@@ -34,7 +34,7 @@ public class CoinAcceptor_DG600F extends RS232CoinAcceptor {
     }
 
     /**
-     * Process the full input buffer
+     * Process the (full) input buffer
      */
     private void process() {
         synchronized (buffer) {
@@ -54,6 +54,9 @@ public class CoinAcceptor_DG600F extends RS232CoinAcceptor {
         }
     }
 
+    /**
+     * Process a byte of input. Will add to the buffer if it is not full yet, otherwise will process and clear the buffer
+     */
     private void addByte(int b) {
         synchronized (buffer) {
             buffer[currentbyte] = b;
@@ -79,10 +82,12 @@ public class CoinAcceptor_DG600F extends RS232CoinAcceptor {
             TooManyListenersException,
             IOException {
         final InputStream portio = port.getInputStream();
+        // Add a listener to the serial port events
         port.addEventListener((SerialPortEvent serialPortEvent) -> {
                     switch (serialPortEvent.getEventType()) {
                         case SerialPortEvent.DATA_AVAILABLE:
                             try {
+                                // Read the available bytes from the serial port
                                 while (portio.available() > 0) {
                                     int r = portio.read();
                                     if (r != -1) {
@@ -95,11 +100,12 @@ public class CoinAcceptor_DG600F extends RS232CoinAcceptor {
                             }
                             break;
                         default:
-                            this.error(new IllegalStateException(String.format("Should only receive data available serial port events, but got %d", serialPortEvent.getEventType())));
+                            this.error(new IllegalStateException(String.format("Should only receive data available serial port events, but got even type %d", serialPortEvent.getEventType())));
                             break;
                     }
                 }
         );
+        // Enable the data available event
         port.notifyOnDataAvailable(true);
     }
 }

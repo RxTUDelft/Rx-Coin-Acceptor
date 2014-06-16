@@ -18,11 +18,11 @@ public class CoinWriter {
         CoinAcceptor acceptor;
         try {
             acceptor = new CoinAcceptor_DG600F()
-                    .setPortname(args[0])
-                    .connect();
+                    .setPortname(args[0]);
             acceptor.coins().subscribe(
                     (Coin c) -> System.out.println(String.format("Got a new coin %s with value %d!", c.name(), c.getValue()))
             );
+            acceptor.start();
         } catch (Exception e) {
             System.err.println("Something went wrong...");
             e.printStackTrace();

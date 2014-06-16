@@ -44,12 +44,12 @@ public class CoinAcceptor_DG600F extends RS232CoinAcceptor {
                     // Convert the value to a coin
                     c = Coin.fromValue(buffer[1] == 3 ? 5 : buffer[1] * 2);
                 } catch (IllegalArgumentException e) {
-                    this.error(new Exception(String.format("Received unknown coin value %d", buffer[1]), e));
+                    error(new Exception(String.format("Received unknown coin value %d", buffer[1]), e));
                     return;
                 }
-                newCoin(c);
+                next(c);
             } else {
-                this.error(new Exception(String.format("Buffer contained illegal sequence '0x%x %d 0x%x'", buffer[0], buffer[1], buffer[2])));
+                error(new Exception(String.format("Buffer contained illegal sequence '0x%x %d 0x%x'", buffer[0], buffer[1], buffer[2])));
             }
         }
     }
@@ -95,12 +95,12 @@ public class CoinAcceptor_DG600F extends RS232CoinAcceptor {
                                     }
                                 }
                             } catch (IOException e) {
-                                this.error(new IOException("Could not read from device", e));
+                                error(new IOException("Could not read from device", e));
                                 break;
                             }
                             break;
                         default:
-                            this.error(new IllegalStateException(String.format("Should only receive data available serial port events, but got even type %d", serialPortEvent.getEventType())));
+                            error(new IllegalStateException(String.format("Should only receive data available serial port events, but got even type %d", serialPortEvent.getEventType())));
                             break;
                     }
                 }
@@ -108,4 +108,6 @@ public class CoinAcceptor_DG600F extends RS232CoinAcceptor {
         // Enable the data available event
         port.notifyOnDataAvailable(true);
     }
+
+
 }

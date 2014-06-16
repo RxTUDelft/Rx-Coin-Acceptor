@@ -1,12 +1,19 @@
 package nl.tudelft.rx;
 
 import purejavacomm.*;
+import rx.Observable;
+import rx.subjects.PublishSubject;
 
 import java.io.IOException;
 import java.util.TooManyListenersException;
 import java.util.concurrent.TimeoutException;
 
-abstract public class RS232CoinAcceptor extends AbstractCoinAcceptor {
+abstract public class RS232CoinAcceptor implements CoinAcceptor {
+
+    /**
+     * The subject to which observers can subscribe to
+     */
+    private final PublishSubject<Coin> subject = PublishSubject.create();
 
     /**
      * The name of the port to connect to
@@ -53,7 +60,7 @@ abstract public class RS232CoinAcceptor extends AbstractCoinAcceptor {
     /**
      * Set RS232 port baud rate
      *
-     * @see javax.comm.SerialPort
+     * @see <a href="http://docs.oracle.com/cd/E17802_01/products/products/javacomm/reference/api/javax/comm/SerialPort.html#setSerialPortParams(int, int, int, int)">SerialPort#setSerialPortParameters</a>
      */
     public RS232CoinAcceptor setPortBaudrate(int port_baudrate) {
         this.port_baudrate = port_baudrate;
@@ -63,7 +70,7 @@ abstract public class RS232CoinAcceptor extends AbstractCoinAcceptor {
     /**
      * Set databits of RS232 port
      *
-     * @see javax.comm.SerialPort
+     * @see <a href="http://docs.oracle.com/cd/E17802_01/products/products/javacomm/reference/api/javax/comm/SerialPort.html#setSerialPortParams(int, int, int, int)">SerialPort#setSerialPortParameters</a>
      */
     public RS232CoinAcceptor setPortDatabits(int port_databits) {
         this.port_databits = port_databits;
@@ -73,7 +80,7 @@ abstract public class RS232CoinAcceptor extends AbstractCoinAcceptor {
     /**
      * Set stop bit(s) of RS232 port
      *
-     * @see javax.comm.SerialPort
+     * @see <a href="http://docs.oracle.com/cd/E17802_01/products/products/javacomm/reference/api/javax/comm/SerialPort.html#setSerialPortParams(int, int, int, int)">SerialPort#setSerialPortParameters</a>
      */
     public RS232CoinAcceptor setPortStopbits(int port_stopbits) {
         this.port_stopbits = port_stopbits;
@@ -83,7 +90,7 @@ abstract public class RS232CoinAcceptor extends AbstractCoinAcceptor {
     /**
      * Set parity of RS232 port
      *
-     * @see javax.comm.SerialPort
+     * @see <a href="http://docs.oracle.com/cd/E17802_01/products/products/javacomm/reference/api/javax/comm/SerialPort.html#setSerialPortParams(int, int, int, int)">SerialPort#setSerialPortParameters</a>
      */
     public RS232CoinAcceptor setPortParity(int port_parity) {
         this.port_parity = port_parity;
@@ -91,8 +98,15 @@ abstract public class RS232CoinAcceptor extends AbstractCoinAcceptor {
     }
 
     public void stop() {
-        super.stop();
-        // Close the serial port
+        closePort();
+        subject.onCompleted();
+    }
+
+    /**
+     * Close the serial port
+     */
+    protected void closePort() {
+        // Close the serial port if it is open
         if (port != null) {
             port.close();
             port = null;
@@ -100,18 +114,18 @@ abstract public class RS232CoinAcceptor extends AbstractCoinAcceptor {
     }
 
     /**
-     * Start listening to the serial port and supplying observers
+     * Start listening to the serial port and emiting whenever a valid value is received
      *
      * @throws purejavacomm.NoSuchPortException               If the supplied port doesn't exist
      * @throws java.lang.IllegalArgumentException             If the supplied port is not a serial port (e.g. parallel port)
      * @throws purejavacomm.PortInUseException                If the port is already in use
      * @throws java.util.concurrent.TimeoutException          If the port doesn't open within the specified timeout
-     * @throws purejavacomm.UnsupportedCommOperationException If the serial port driver doesn't support the chosen setting
+     * @throws purejavacomm.UnsupportedCommOperationException If the serial port driver doesn't support the chosen settings
      * @throws java.lang.IllegalStateException                If already connected to a device
      * @throws java.io.IOException                            If something goes wrong while setting up the device
-     * @throws java.util.TooManyListenersException            If there are too many listeners attached to the port
+     * @throws java.util.TooManyListenersException            If there are too many listeners attached to the serial port
      */
-    public RS232CoinAcceptor connect() throws
+    public RS232CoinAcceptor start() throws
             NoSuchPortException,
             IllegalArgumentException,
             PortInUseException,
@@ -149,4 +163,18 @@ abstract public class RS232CoinAcceptor extends AbstractCoinAcceptor {
      * Subclasses should use it to configure the device
      */
     protected abstract void setupDeviceConnection() throws IOException, TooManyListenersException;
+
+    @Override
+    public final Observable<Coin> coins() {
+        return subject;
+    }
+
+    protected void error(Throwable t) {
+        closePort();
+        subject.onError(t);
+    }
+
+    protected void next(Coin c) {
+        subject.onNext(c);
+    }
 }

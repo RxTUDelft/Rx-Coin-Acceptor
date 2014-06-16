@@ -2,6 +2,7 @@ package nl.tudelft.rx;
 
 import purejavacomm.*;
 import rx.Observable;
+import rx.schedulers.Schedulers;
 import rx.subjects.PublishSubject;
 
 import java.io.IOException;
@@ -12,6 +13,7 @@ abstract public class RS232CoinAcceptor implements CoinAcceptor {
 
     /**
      * The subject to which observers can subscribe to
+     *
      */
     private final PublishSubject<Coin> subject = PublishSubject.create();
 
@@ -166,7 +168,7 @@ abstract public class RS232CoinAcceptor implements CoinAcceptor {
 
     @Override
     public final Observable<Coin> coins() {
-        return subject;
+        return subject.observeOn(Schedulers.newThread());
     }
 
     protected void error(Throwable t) {

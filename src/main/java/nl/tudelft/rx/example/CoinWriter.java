@@ -3,11 +3,15 @@ package nl.tudelft.rx.example;
 import nl.tudelft.rx.Coin;
 import nl.tudelft.rx.CoinAcceptor;
 import nl.tudelft.rx.CoinAcceptor_DG600F;
+import rx.schedulers.Schedulers;
 
 /**
  * An example class that writes a message to the console every time a coin is inserted
  */
 public class CoinWriter {
+
+    // Explicit race condititon
+    private static int i = 0;
 
     public static void main(String... args) {
         if(args.length < 1) {
@@ -20,7 +24,22 @@ public class CoinWriter {
             acceptor = new CoinAcceptor_DG600F()
                     .setPortname(args[0]);
             acceptor.coins().subscribe(
-                    (Coin c) -> System.out.println(String.format("Got a new coin %s with value %d!", c.name(), c.getValue()))
+                    (Coin c) -> {
+                        i++;
+                        System.out.println(String.format("1 %d: Got a new coin %s with value %d from Thread %d", i, c.name(), c.getValue(), Thread.currentThread().getId()));
+                    }
+            );
+            acceptor.coins().subscribe(
+                    (Coin c) -> {
+                        i++;
+                        System.out.println(String.format("2 %d: Got a new coin %s with value %d from Thread %d", i, c.name(), c.getValue(), Thread.currentThread().getId()));
+                    }
+            );
+            acceptor.coins().subscribe(
+                    (Coin c) -> {
+                        i++;
+                        System.out.println(String.format("3 %d: Got a new coin %s with value %d from Thread %d", i, c.name(), c.getValue(), Thread.currentThread().getId()));
+                    }
             );
             acceptor.start();
         } catch (Exception e) {

@@ -12,7 +12,7 @@ import java.util.concurrent.TimeoutException;
 abstract public class RS232CoinAcceptor implements CoinAcceptor {
 
     /**
-     * The subject to which distributes the
+     * The subject to which the coin events should be fed
      */
     private final PublishSubject<Coin> subject = PublishSubject.create();
     /**

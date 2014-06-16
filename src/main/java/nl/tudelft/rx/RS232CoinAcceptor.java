@@ -114,7 +114,7 @@ abstract public class RS232CoinAcceptor implements CoinAcceptor {
     }
 
     @Override
-    public final Observable<Coin> coins() {
+    public final Observable<Coin> coinStream() {
         return coinStream;
     }
 

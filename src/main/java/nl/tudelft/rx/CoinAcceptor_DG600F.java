@@ -18,8 +18,36 @@ public class CoinAcceptor_DG600F extends RS232CoinAcceptor {
      * This buffer stores these bytes
      */
     final int[] buffer = new int[3];
+    /**
+     * Byte the buffer is currently at
+     */
     int currentbyte = 0;
 
+    /**
+     * Process a byte of input. Will add to the buffer if it is not full yet, otherwise will process and clear the buffer
+     */
+    private void addByte(int b) {
+        synchronized (buffer) {
+            buffer[currentbyte] = b;
+            currentbyte++;
+            if (currentbyte >= 3) {
+                process();
+                clearBuffer();
+            }
+        }
+    }
+
+    /**
+     * Clear the buffer
+     */
+    private void clearBuffer() {
+        synchronized (buffer) {
+            currentbyte = 0;
+            buffer[0] = 0;
+            buffer[1] = 0;
+            buffer[2] = 0;
+        }
+    }
 
     /**
      * Check if the (full) buffer is in a valid state
@@ -51,29 +79,6 @@ public class CoinAcceptor_DG600F extends RS232CoinAcceptor {
             } else {
                 error(new Exception(String.format("Buffer contained illegal sequence '0x%x %d 0x%x'", buffer[0], buffer[1], buffer[2])));
             }
-        }
-    }
-
-    /**
-     * Process a byte of input. Will add to the buffer if it is not full yet, otherwise will process and clear the buffer
-     */
-    private void addByte(int b) {
-        synchronized (buffer) {
-            buffer[currentbyte] = b;
-            currentbyte++;
-            if (currentbyte >= 3) {
-                process();
-                clearBuffer();
-            }
-        }
-    }
-
-    private void clearBuffer() {
-        synchronized (buffer) {
-            currentbyte = 0;
-            buffer[0] = 0;
-            buffer[1] = 0;
-            buffer[2] = 0;
         }
     }
 

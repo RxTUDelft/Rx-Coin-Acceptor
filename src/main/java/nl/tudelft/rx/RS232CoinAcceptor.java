@@ -12,11 +12,14 @@ import java.util.concurrent.TimeoutException;
 abstract public class RS232CoinAcceptor implements CoinAcceptor {
 
     /**
-     * The subject to which observers can subscribe to
-     *
+     * The subject to which distributes the
      */
     private final PublishSubject<Coin> subject = PublishSubject.create();
-
+    /**
+     * The observable that subscribers should use.
+     * This spawns a new thread for every emit to prevent the thread that reads the serial data from blocking.
+     */
+    private final Observable<Coin> coinStream = subject.observeOn(Schedulers.newThread());
     /**
      * The name of the port to connect to
      */
@@ -99,11 +102,6 @@ abstract public class RS232CoinAcceptor implements CoinAcceptor {
         return this;
     }
 
-    public void stop() {
-        closePort();
-        subject.onCompleted();
-    }
-
     /**
      * Close the serial port
      */
@@ -114,6 +112,32 @@ abstract public class RS232CoinAcceptor implements CoinAcceptor {
             port = null;
         }
     }
+
+    @Override
+    public final Observable<Coin> coins() {
+        return coinStream;
+    }
+
+    /**
+     * Subclasses should class this when an error happens
+     */
+    protected void error(Throwable t) {
+        closePort();
+        subject.onError(t);
+    }
+
+    /**
+     * Subclasses should call this when a new coin is detected
+     */
+    protected void next(Coin c) {
+        subject.onNext(c);
+    }
+
+    /**
+     * This class will be called as soon as the serial port is opened
+     * Subclasses should use it to configure the device
+     */
+    protected abstract void setupDeviceConnection() throws IOException, TooManyListenersException;
 
     /**
      * Start listening to the serial port and emiting whenever a valid value is received
@@ -136,47 +160,37 @@ abstract public class RS232CoinAcceptor implements CoinAcceptor {
             IllegalStateException,
             IOException,
             TooManyListenersException {
+        try {
+            if (port != null) {
+                throw new IllegalStateException("Already connected");
+            }
 
-        if (port != null) {
-            throw new IllegalStateException("Already connected");
+            CommPortIdentifier portid = CommPortIdentifier.getPortIdentifier(port_name);
+
+            if (portid.getPortType() != CommPortIdentifier.PORT_SERIAL) {
+                throw new IllegalArgumentException(String.format("Expected serial port was type %d", portid.getPortType()));
+            }
+
+            port = (SerialPort) portid.open(this.getClass().getName(), port_open_timeout);
+            if (port == null) {
+                throw new TimeoutException(String.format("Could not open serial port within %d ms", port_open_timeout));
+            }
+
+            // Setup port parameters
+            port.setSerialPortParams(port_baudrate, port_databits, port_stopbits, port_parity);
+
+            setupDeviceConnection();
+
+            return this;
+        } catch (Throwable t) {
+            // Propagate the error to all subscribers and rethrow
+            error(t);
+            throw t;
         }
-
-        CommPortIdentifier portid = CommPortIdentifier.getPortIdentifier(port_name);
-
-        if (portid.getPortType() != CommPortIdentifier.PORT_SERIAL) {
-            throw new IllegalArgumentException(String.format("Expected serial port was type %d", portid.getPortType()));
-        }
-
-        port = (SerialPort) portid.open(this.getClass().getName(), port_open_timeout);
-        if (port == null) {
-            throw new TimeoutException(String.format("Could not open serial port within %d ms", port_open_timeout));
-        }
-
-        // Setup port parameters
-        port.setSerialPortParams(port_baudrate, port_databits, port_stopbits, port_parity);
-
-        setupDeviceConnection();
-
-        return this;
     }
 
-    /**
-     * This class will be called as soon as the serial port is opened
-     * Subclasses should use it to configure the device
-     */
-    protected abstract void setupDeviceConnection() throws IOException, TooManyListenersException;
-
-    @Override
-    public final Observable<Coin> coins() {
-        return subject.observeOn(Schedulers.newThread());
-    }
-
-    protected void error(Throwable t) {
+    public void stop() {
         closePort();
-        subject.onError(t);
-    }
-
-    protected void next(Coin c) {
-        subject.onNext(c);
+        subject.onCompleted();
     }
 }

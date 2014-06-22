@@ -9,6 +9,9 @@ import java.io.IOException;
 import java.util.TooManyListenersException;
 import java.util.concurrent.TimeoutException;
 
+/**
+ * Abstract base class for RS232 coin acceptors
+ */
 abstract public class RS232CoinAcceptor implements CoinAcceptor {
 
     /**
@@ -115,7 +118,7 @@ abstract public class RS232CoinAcceptor implements CoinAcceptor {
 
     @Override
     public final Observable<Coin> coinStream() {
-        return coinStream;
+        return coinStream.asObservable();
     }
 
     /**

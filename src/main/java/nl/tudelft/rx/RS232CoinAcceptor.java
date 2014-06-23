@@ -6,6 +6,7 @@ import rx.schedulers.Schedulers;
 import rx.subjects.PublishSubject;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.TooManyListenersException;
 import java.util.concurrent.TimeoutException;
 
@@ -51,6 +52,12 @@ abstract public class RS232CoinAcceptor implements CoinAcceptor {
      * The serial port connected to the hardware
      */
     protected SerialPort port;
+
+    /**
+     * Observable for raw bytes of the serial port
+     * Because java has no unsigned byte type the events are integers
+     */
+    protected PublishSubject<Integer> serialPortDataStream = PublishSubject.create();
 
     public RS232CoinAcceptor setPortname(String port_name) {
         this.port_name = port_name;
@@ -182,6 +189,33 @@ abstract public class RS232CoinAcceptor implements CoinAcceptor {
             // Setup port parameters
             port.setSerialPortParams(port_baudrate, port_databits, port_stopbits, port_parity);
 
+            final InputStream portio = port.getInputStream();
+            // Add a listener to the serial port events
+            port.addEventListener((SerialPortEvent serialPortEvent) -> {
+                        switch (serialPortEvent.getEventType()) {
+                            case SerialPortEvent.DATA_AVAILABLE:
+                                try {
+                                    // Read the available bytes from the serial port
+                                    while (portio.available() > 0) {
+                                        int r = portio.read();
+                                        if (r != -1) {
+                                            serialPortDataStream.onNext(r);
+                                        }
+                                    }
+                                } catch (IOException e) {
+                                    error(new IOException("Could not read from device", e));
+                                    break;
+                                }
+                                break;
+                            default:
+                                error(new IllegalStateException(String.format("Should only receive data available serial port events, but got even type %d", serialPortEvent.getEventType())));
+                                break;
+                        }
+                    }
+            );
+            // Enable the data available event
+            port.notifyOnDataAvailable(true);
+
             setupDeviceConnection();
 
             return this;
@@ -194,6 +228,10 @@ abstract public class RS232CoinAcceptor implements CoinAcceptor {
 
     public void stop() {
         closePort();
+        completed();
+    }
+
+    protected void completed() {
         subject.onCompleted();
     }
 }

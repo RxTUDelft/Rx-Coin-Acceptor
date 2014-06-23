@@ -18,7 +18,7 @@ public class CoinAcceptor_DG600F extends RS232CoinAcceptor {
                 .subscribe((List<Integer> data) -> {
                     // Check if the bytes are valid
                     /**
-                     * The DG600F (in the configuration I've chosen) sents out 3 bytes for every coin:
+                     * The DG600F (in the configuration I've chosen) sends out 3 bytes for every coin:
                      * Byte 1 = 0xAA
                      * Byte 2 = User-configured coin value (€0,05 = 3, €0,10 = 5, €0,20 = 10, €0,50 = 25, €1 = 50, €2 = 100)
                      * Byte 3 = XOR of byte 1 and 2

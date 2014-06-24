@@ -1,8 +1,6 @@
 package nl.tudelft.rx;
 
 import purejavacomm.*;
-import rx.Observable;
-import rx.schedulers.Schedulers;
 import rx.subjects.PublishSubject;
 
 import java.io.IOException;
@@ -14,16 +12,6 @@ import java.util.concurrent.TimeoutException;
  * Abstract base class for RS232 coin acceptors
  */
 abstract public class RS232CoinAcceptor implements CoinAcceptor {
-
-    /**
-     * The subject to which the coin events should be fed
-     */
-    private final PublishSubject<Coin> subject = PublishSubject.create();
-    /**
-     * The observable that subscribers should use.
-     * This spawns a new thread for every emit to prevent the thread that reads the serial data from blocking.
-     */
-    private final Observable<Coin> coinStream = subject.observeOn(Schedulers.newThread());
     /**
      * The name of the port to connect to
      */
@@ -123,24 +111,12 @@ abstract public class RS232CoinAcceptor implements CoinAcceptor {
         }
     }
 
-    @Override
-    public final Observable<Coin> coinStream() {
-        return coinStream.asObservable();
-    }
-
     /**
      * Subclasses should class this when an error happens
      */
     protected void error(Throwable t) {
         closePort();
-        subject.onError(t);
-    }
-
-    /**
-     * Subclasses should call this when a new coin is detected
-     */
-    protected void next(Coin c) {
-        subject.onNext(c);
+        serialPortDataStream.onError(t);
     }
 
     /**
@@ -232,6 +208,6 @@ abstract public class RS232CoinAcceptor implements CoinAcceptor {
     }
 
     protected void completed() {
-        subject.onCompleted();
+        serialPortDataStream.onCompleted();
     }
 }

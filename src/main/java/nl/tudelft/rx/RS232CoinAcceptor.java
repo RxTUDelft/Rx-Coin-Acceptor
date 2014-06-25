@@ -205,8 +205,8 @@ abstract public class RS232CoinAcceptor implements CoinAcceptor {
             // Close the serial port if the stream of the concrete subclass gives an error
             coinStream().doOnError((Throwable t) -> {
                 // The coinStream already sent the last event, so prevent more events on serialPortDataStream
-                closePort();
                 lastEventSent.set(true);
+                closePort();
             });
 
             return this;

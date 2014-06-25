@@ -7,11 +7,16 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.TooManyListenersException;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Abstract base class for RS232 coin acceptors
  */
 abstract public class RS232CoinAcceptor implements CoinAcceptor {
+    /**
+     * Completed flag to prevent multiple error/completed calls
+     */
+    private final AtomicBoolean lastEventSent = new AtomicBoolean(false);
     /**
      * The name of the port to connect to
      */
@@ -40,7 +45,6 @@ abstract public class RS232CoinAcceptor implements CoinAcceptor {
      * The serial port connected to the hardware
      */
     protected SerialPort port;
-
     /**
      * Observable for raw bytes of the serial port
      * Because java has no unsigned byte type the events are integers
@@ -116,7 +120,10 @@ abstract public class RS232CoinAcceptor implements CoinAcceptor {
      */
     protected void error(Throwable t) {
         closePort();
-        serialPortDataStream.onError(t);
+        // Check if we've already sent the last event, and if not do so
+        if (lastEventSent.compareAndSet(false, true)) {
+            serialPortDataStream.onError(t);
+        }
     }
 
     /**
@@ -150,6 +157,8 @@ abstract public class RS232CoinAcceptor implements CoinAcceptor {
             if (port != null) {
                 throw new IllegalStateException("Already connected");
             }
+
+            lastEventSent.set(false);
 
             CommPortIdentifier portid = CommPortIdentifier.getPortIdentifier(port_name);
 
@@ -194,7 +203,11 @@ abstract public class RS232CoinAcceptor implements CoinAcceptor {
             setupDeviceConnection();
 
             // Close the serial port if the stream of the concrete subclass gives an error
-            coinStream().doOnError((Throwable t) -> closePort());
+            coinStream().doOnError((Throwable t) -> {
+                // The coinStream already sent the last event, so prevent more events on serialPortDataStream
+                closePort();
+                lastEventSent.set(true);
+            });
 
             return this;
         } catch (Throwable t) {
@@ -210,6 +223,10 @@ abstract public class RS232CoinAcceptor implements CoinAcceptor {
     }
 
     protected void completed() {
-        serialPortDataStream.onCompleted();
+        // Check if we've already sent the last event, and if not do so
+        if (lastEventSent.compareAndSet(false, true)) {
+            // Send the completed event
+            serialPortDataStream.onCompleted();
+        }
     }
 }

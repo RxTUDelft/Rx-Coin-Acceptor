@@ -180,7 +180,6 @@ abstract public class RS232CoinAcceptor implements CoinAcceptor {
                                     }
                                 } catch (IOException e) {
                                     error(new IOException("Could not read from device", e));
-                                    break;
                                 }
                                 break;
                             default:

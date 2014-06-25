@@ -26,21 +26,16 @@ public class CoinAcceptor_DG600F extends RS232CoinAcceptor {
                             && data.get(1) > 0 && data.get(1) <= 100
                             && data.get(2) == (data.get(0) ^ data.get(1))) {
                         // Valid data!
-                        try {
-                            // Convert the value to a coin
-                            return Coin.fromValue(data.get(1) == 3 ? 5 : data.get(1) * 2);
-                        } catch (IllegalArgumentException e) {
-                            error(new RuntimeException(String.format("Received unknown coin value %d", data.get(1)), e));
-                        }
+                        // Convert the value to a coin
+                        return Coin.fromValue(data.get(1) == 3 ? 5 : data.get(1) * 2);
                     } else {
-                        error(new RuntimeException(String.format("Buffer contained illegal sequence '0x%x %d 0x%x'", data.get(0), data.get(1), data.get(2))));
+                        throw new RuntimeException(String.format("Buffer contained illegal sequence '0x%x %d 0x%x'", data.get(0), data.get(1), data.get(2)));
                     }
+                } catch (IllegalArgumentException e) {
+                    throw new RuntimeException(String.format("Received unknown coin value %d", data.get(1)), e);
                 } catch (IndexOutOfBoundsException e) {
-                    error(new Exception(String.format("Did not receive 3 bytes of data")));
-                } catch (Throwable t) {
-                    error(t);
+                    throw new RuntimeException(String.format("Did not receive 3 bytes of data"));
                 }
-                return null;
             })
             .observeOn(Schedulers.newThread());
 

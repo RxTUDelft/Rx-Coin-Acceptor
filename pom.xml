@@ -8,7 +8,7 @@
     <packaging>jar</packaging>
 
     <name>Rx Coin Acceptor</name>
-    <url>https://</url>
+    <url>https://github.com/RxTUDelft/Rx-Coin-Acceptor</url>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
